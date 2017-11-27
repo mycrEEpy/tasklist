@@ -1,5 +1,5 @@
-FROM golang:1.9.2-alpine3.6
-LABEL maintainer Tobias Germer
+# Build image
+FROM golang:1.9.2-alpine3.6 AS build
 
 # Pre-requirements
 RUN apk add --no-cache git
@@ -11,6 +11,14 @@ COPY . .
 RUN dep ensure
 RUN go-wrapper install
 
+# Runtime image
+FROM alpine:3.6 AS runtime
+LABEL maintainer Tobias Germer
+WORKDIR /opt/app
+
+# Copy binary from build
+COPY --from=build /go/bin/tasklist /opt/app/tasklist 
+
 # Settings for volumes, user and network
 RUN mkdir -p /tmp/tasklist \
     && chown -R nobody:nobody /tmp/tasklist
@@ -18,4 +26,5 @@ VOLUME /tmp/tasklist
 USER nobody:nobody
 EXPOSE 8080
 
-CMD ["go-wrapper", "run", "tasklist"]
+# Execute tasklist binary on start
+CMD ["/opt/app/tasklist"]
